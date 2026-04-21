@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - CDAVP{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h1 class="mb-2">Community Safety Dashboard</h1>
+    <p class="text-muted mb-4">Every complaint is shared across user accounts so everyone can stay alert about risky areas and unsafe time slots.</p>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card bg-danger text-white">
+      <div class="card-body">
+        <h6 class="card-title">Total Complaints</h6>
+        <h3>{{ total_crimes }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-dark">
+      <div class="card-body">
+        <h6 class="card-title">Red Alert Areas</h6>
+        <h3>{{ alert_summary.red_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-info text-white">
+      <div class="card-body">
+        <h6 class="card-title">Yellow Alert Areas</h6>
+        <h3>{{ alert_summary.yellow_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body">
+        <h6 class="card-title">Add Complaint</h6>
+        <p class="mb-0"><a href="/crimes/add/" class="btn btn-sm btn-light">Report Now</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-dark text-white">
+        <strong>Hotspot Areas</strong>
+      </div>
+      <div class="card-body">
+        {% for area in hotspot_areas %}
+        <div class="alert {% if area.alert_level == 'red' %}alert-danger{% elif area.alert_level == 'yellow' %}alert-warning{% else %}alert-success{% endif %} mb-3">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <strong>{{ area.location_name }}</strong><br>
+              <span>{{ area.report_count }} complaints, top issue: {{ area.top_crime }}</span><br>
+              <small>Unsafe time slot: {{ area.unsafe_time_slot }}</small>
+            </div>
+            <span class="badge {% if area.alert_level == 'red' %}bg-danger{% elif area.alert_level == 'yellow' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+              {{ area.alert_level|upper }} ALERT
+            </span>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted mb-0">No complaint hotspots found yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-dark text-white">
+        <strong>Unsafe Time Slots</strong>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Time Slot</th>
+              <th>Complaints</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for slot in risky_time_slots %}
+            <tr>
+              <td>{{ slot.label }}</td>
+              <td>{{ slot.count }}</td>
+              <td>
+                {% if slot.count >= 3 %}
+                <span class="badge bg-danger">High Risk</span>
+                {% elif slot.count >= 2 %}
+                <span class="badge bg-warning text-dark">Medium Risk</span>
+                {% else %}
+                <span class="badge bg-success">Low Risk</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted">No time-slot analysis available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-dark text-white">
+        <strong>Complaints by Type</strong>
+      </div>
+      <div class="card-body">
+        <canvas id="typeChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-dark text-white">
+        <strong>Monthly Complaint Trend</strong>
+      </div>
+      <div class="card-body">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <strong>Shared Community Complaints</strong>
+        <a href="/map/" class="btn btn-sm btn-light">Open Alert Map</a>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped table-sm">
+          <thead>
+            <tr>
+              <th>Crime Type</th>
+              <th>Location</th>
+              <th>Date</th>
+              <th>Time Slot</th>
+              <th>Reported By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for crime in community_reports %}
+            <tr>
+              <td><span class="badge bg-danger">{{ crime.get_crime_type_display }}</span></td>
+              <td>{{ crime.location_name }}</td>
+              <td>{{ crime.date_time|date:"d M Y, h:i A" }}</td>
+              <td>
+                {% if crime.date_time.hour < 4 %}
+                12 AM - 4 AM
+                {% elif crime.date_time.hour < 8 %}
+                4 AM - 8 AM
+                {% elif crime.date_time.hour < 12 %}
+                8 AM - 12 PM
+                {% elif crime.date_time.hour < 16 %}
+                12 PM - 4 PM
+                {% elif crime.date_time.hour < 20 %}
+                4 PM - 8 PM
+                {% else %}
+                8 PM - 12 AM
+                {% endif %}
+              </td>
+              <td>{{ crime.reported_by.username|default:"N/A" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted">No reports submitted yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var typeLabels = {{ chart_labels|safe }};
+var typeCounts = {{ chart_counts|safe }};
+var monthLabels = {{ month_labels|safe }};
+var monthCounts = {{ month_counts|safe }};
+
+var colors = ['#d62828', '#f77f00', '#003049', '#9d0208', '#3a86ff', '#6c757d', '#2a9d8f', '#8d99ae'];
+
+new Chart(document.getElementById('typeChart'), {
+  type: 'bar',
+  data: {
+    labels: typeLabels,
+    datasets: [{
+      label: 'Complaints',
+      data: typeCounts,
+      backgroundColor: colors.slice(0, typeLabels.length),
+      borderRadius: 5
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: monthLabels,
+    datasets: [{
+      label: 'Complaints',
+      data: monthCounts,
+      borderColor: '#d62828',
+      backgroundColor: 'rgba(214, 40, 40, 0.12)',
+      borderWidth: 2,
+      tension: 0.3,
+      fill: true
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: true } } }
+});
+</script>
+{% endblock %}

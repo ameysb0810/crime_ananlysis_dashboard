@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Crime Records - CDAVP{% endblock %}
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-12">
+    <h1 class="mb-2">Community Crime Records</h1>
+    <p class="text-muted">Every complaint is visible to all logged-in users. Only the original reporter can edit or delete their own complaint.</p>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header bg-dark text-white">
+        <strong>Filter Records</strong>
+      </div>
+      <div class="card-body">
+        <form method="GET" class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Crime Type</label>
+            {{ form.crime_type }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">From Date</label>
+            {{ form.date_from }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">To Date</label>
+            {{ form.date_to }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Search Location</label>
+            {{ form.search }}
+          </div>
+          <div class="col-md-12">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a href="/crimes/" class="btn btn-secondary">Clear</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header bg-dark text-white">
+        <strong>Shared Records List</strong>
+      </div>
+      <div class="card-body">
+        <table class="table table-hover table-striped">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Crime Type</th>
+              <th>Location</th>
+              <th>Date & Time</th>
+              <th>Reported By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for crime in crimes %}
+            <tr>
+              <td>{{ crime.id }}</td>
+              <td><span class="badge bg-danger">{{ crime.get_crime_type_display }}</span></td>
+              <td>{{ crime.location_name }}</td>
+              <td>{{ crime.date_time|date:"d M Y, h:i A" }}</td>
+              <td>{{ crime.reported_by.username|default:"N/A" }}</td>
+              <td>
+                {% if crime.reported_by == user %}
+                <a href="/crimes/edit/{{ crime.id }}/" class="btn btn-sm btn-warning">Edit</a>
+                <a href="/crimes/delete/{{ crime.id }}/" class="btn btn-sm btn-danger">Delete</a>
+                {% else %}
+                <span class="text-muted small">View only</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted">No crime records found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if crimes.has_other_pages %}
+<nav aria-label="Page navigation" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if crimes.has_previous %}
+    <li class="page-item"><a class="page-link" href="?page=1">First</a></li>
+    <li class="page-item"><a class="page-link" href="?page={{ crimes.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item active"><span class="page-link">{{ crimes.number }} / {{ crimes.paginator.num_pages }}</span></li>
+    {% if crimes.has_next %}
+    <li class="page-item"><a class="page-link" href="?page={{ crimes.next_page_number }}">Next</a></li>
+    <li class="page-item"><a class="page-link" href="?page={{ crimes.paginator.num_pages }}">Last</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

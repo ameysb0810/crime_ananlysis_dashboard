@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% block title %}Alert Map - CDAVP{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h1 class="mb-2">Khargone Community Alert Map</h1>
+    <p class="text-muted mb-4">All user complaints are visible here. Red and yellow highlights show areas where repeated incidents were reported inside Khargone city.</p>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card bg-danger text-white">
+      <div class="card-body">
+        <h6 class="card-title">Red Alert Areas</h6>
+        <h3>{{ alert_summary.red_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-dark">
+      <div class="card-body">
+        <h6 class="card-title">Yellow Alert Areas</h6>
+        <h3>{{ alert_summary.yellow_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body">
+        <h6 class="card-title">Normal Areas</h6>
+        <h3>{{ alert_summary.green_count }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-dark text-white">
+      <div class="card-body">
+        <h6 class="card-title">Report Complaint</h6>
+        <p class="mb-0"><a href="/crimes/add/" class="btn btn-sm btn-light">Add Now</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-3">
+  <div class="col-md-8">
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="khargoneLayer" checked>
+      <label class="form-check-label" for="khargoneLayer">Show Khargone City Boundary</label>
+    </div>
+  </div>
+  <div class="col-md-4 text-md-end mt-2 mt-md-0">
+    <span class="badge bg-danger me-2">Red Alert</span>
+    <span class="badge bg-warning text-dark me-2">Yellow Alert</span>
+    <span class="badge bg-success">Normal Alert</span>
+  </div>
+</div>
+
+<div id="map" style="height: 620px; width: 100%; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
+
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-dark text-white">
+        <strong>High Risk Time Slots</strong>
+      </div>
+      <div class="card-body">
+        <table class="table table-sm table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Time Slot</th>
+              <th>Reports</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for slot in risky_time_slots %}
+            <tr>
+              <td>{{ slot.label }}</td>
+              <td>{{ slot.count }}</td>
+              <td>
+                {% if slot.count >= 3 %}
+                <span class="badge bg-danger">Unsafe</span>
+                {% elif slot.count >= 2 %}
+                <span class="badge bg-warning text-dark">Watch</span>
+                {% else %}
+                <span class="badge bg-success">Safer</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted">No time slot data available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header bg-dark text-white">
+        <strong>How Alerts Work</strong>
+      </div>
+      <div class="card-body">
+        <p class="mb-2"><strong>Red Alert:</strong> 3 or more complaints from the same area.</p>
+        <p class="mb-2"><strong>Yellow Alert:</strong> 2 complaints from the same area.</p>
+        <p class="mb-0"><strong>Normal:</strong> 1 complaint reported in that area.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+window.addEventListener('load', function() {
+  var mapData = {{ map_data|safe }};
+  var hotspotAreas = {{ hotspot_areas|safe }};
+  var khargoneGeoJson = {{ khargone_geojson|safe }};
+  var map = L.map('map').setView([22.05, 75.18], 10);
+  var markerGroup = L.featureGroup().addTo(map);
+  var alertGroup = L.featureGroup().addTo(map);
+
+  var khargoneLayer = L.geoJSON(null, {
+    style: function() {
+      return {
+        color: '#1E90FF',
+        weight: 4,
+        opacity: 0.9,
+        fillColor: '#87CEEB',
+        fillOpacity: 0.18
+      };
+    },
+    onEachFeature: function(feature, layer) {
+      layer.bindPopup(
+        '<strong>' + feature.properties.name + '</strong><br>' +
+        feature.properties.city + ', ' + feature.properties.state
+      );
+    }
+  });
+
+  document.getElementById('khargoneLayer').addEventListener('change', function(e) {
+    if (e.target.checked) {
+      map.addLayer(khargoneLayer);
+    } else {
+      map.removeLayer(khargoneLayer);
+    }
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors & Khargone City Boundary',
+    maxZoom: 19
+  }).addTo(map);
+
+  khargoneLayer.addData(khargoneGeoJson);
+  map.addLayer(khargoneLayer);
+  var khargoneBounds = khargoneLayer.getBounds();
+
+  var crimeColors = {
+    'theft': '#FF6B6B',
+    'assault': '#FFC93D',
+    'robbery': '#2C3E50',
+    'murder': '#E74C3C',
+    'fraud': '#3498DB',
+    'vandalism': '#95A5A6',
+    'drug_offense': '#27AE60',
+    'other': '#7F8C8D'
+  };
+
+  var alertStyles = {
+    red: { color: '#c1121f', fillColor: '#ef233c', radius: 450 },
+    yellow: { color: '#f77f00', fillColor: '#fcbf49', radius: 325 },
+    green: { color: '#2a9d8f', fillColor: '#52b788', radius: 220 }
+  };
+
+  mapData.forEach(function(crime) {
+    var point = L.latLng(crime.latitude, crime.longitude);
+    if (!Number.isFinite(crime.latitude) || !Number.isFinite(crime.longitude)) {
+      return;
+    }
+    if (khargoneBounds.isValid() && !khargoneBounds.contains(point)) {
+      return;
+    }
+
+    var marker = L.circleMarker([crime.latitude, crime.longitude], {
+      radius: 8,
+      fillColor: crimeColors[crime.crime_type] || '#999',
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(markerGroup);
+
+    marker.bindPopup(
+      '<strong>' + crime.crime_type_display + '</strong><br>' +
+      crime.location_name + '<br>' +
+      'Reported by: ' + crime.reported_by + '<br>' +
+      'Time slot: ' + crime.time_slot + '<br>' +
+      crime.date_time
+    );
+  });
+
+  hotspotAreas.forEach(function(area) {
+    var point = L.latLng(area.latitude, area.longitude);
+    if (khargoneBounds.isValid() && !khargoneBounds.contains(point)) {
+      return;
+    }
+
+    var style = alertStyles[area.alert_level] || alertStyles.green;
+    var circle = L.circle([area.latitude, area.longitude], {
+      radius: style.radius,
+      color: style.color,
+      fillColor: style.fillColor,
+      fillOpacity: 0.28,
+      weight: 2
+    }).addTo(alertGroup);
+
+    circle.bindPopup(
+      '<strong>' + area.location_name + '</strong><br>' +
+      'Alert: ' + area.alert_level.toUpperCase() + '<br>' +
+      'Complaints: ' + area.report_count + '<br>' +
+      'Top issue: ' + area.top_crime + '<br>' +
+      'Unsafe time slot: ' + area.unsafe_time_slot + '<br>' +
+      'Latest report: ' + area.latest_report
+    );
+  });
+
+  if (khargoneBounds.isValid()) {
+    map.fitBounds(khargoneBounds.pad(0.05), { animate: true });
+  } else {
+    map.setView([22.05, 75.18], 10);
+  }
+
+  setTimeout(function() {
+    map.invalidateSize();
+  }, 100);
+});
+</script>
+{% endblock %}
