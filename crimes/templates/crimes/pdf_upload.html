@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Upload CSV - Crime Data Analysis{% endblock %}
+{% block content %}
+<div class="page-hero">
+  <div>
+    <span class="dashboard-kicker">Bulk Import</span>
+    <h1>Upload Crime Data</h1>
+    <p class="dashboard-lead">Import multiple records at once using a CSV file.</p>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><strong><i class="fa-solid fa-cloud-arrow-up me-2"></i>Upload CSV</strong></div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <strong>Required columns:</strong>
+          <code>crime_type, date_time, location_name, latitude, longitude, description</code>
+          <div class="small mt-1">Use date_time format: YYYY-MM-DD HH:MM:SS</div>
+        </div>
+        <form method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="upload-zone mb-3">
+            <i class="fa-solid fa-file-csv d-block"></i>
+            <label class="form-label" for="{{ form.csv_file.id_for_label }}">{{ form.csv_file.label }}</label>
+            {{ form.csv_file }}
+            {% if form.csv_file.errors %}<div class="text-danger small mt-1">{{ form.csv_file.errors }}</div>{% endif %}
+          </div>
+          <div class="btn-group-aligned">
+            <button type="submit" class="btn btn-success"><i class="fa-solid fa-upload me-2"></i>Upload & Import</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header"><strong><i class="fa-solid fa-clipboard-list me-2"></i>CSV Format</strong></div>
+      <div class="card-body">
+        <p class="text-muted">The CSV should contain data in this structure:</p>
+        <code class="d-block p-3 rounded bg-light text-dark mb-2">crime_type,date_time,location_name,latitude,longitude,description</code>
+        <code class="d-block p-3 rounded bg-light text-dark">theft,2024-03-15 14:30:00,MG Road Khargone,22.05,75.18,Mobile snatched</code>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

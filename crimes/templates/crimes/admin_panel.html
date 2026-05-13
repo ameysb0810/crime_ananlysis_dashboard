@@ -1,0 +1,770 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel - Crime Data Analysis{% endblock %}
+
+{% block content %}
+
+<style>
+
+:root{
+  --primary:#0f172a;
+  --secondary:#1e293b;
+  --accent:#2563eb;
+  --success:#16a34a;
+  --danger:#dc2626;
+  --warning:#f59e0b;
+  --light:#f8fafc;
+  --border:#e2e8f0;
+}
+
+/* ================= HERO ================= */
+
+.page-hero{
+  background:linear-gradient(135deg,#0f172a,#1e3a8a);
+  border-radius:28px;
+  padding:35px;
+  margin-bottom:28px;
+  color:#fff;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:20px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(15,23,42,0.18);
+}
+
+.page-hero::before{
+  content:'';
+  position:absolute;
+  width:280px;
+  height:280px;
+  background:rgba(255,255,255,0.05);
+  border-radius:50%;
+  top:-120px;
+  right:-80px;
+}
+
+.dashboard-kicker{
+  display:inline-block;
+  background:rgba(255,255,255,0.12);
+  padding:8px 14px;
+  border-radius:30px;
+  font-size:13px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+
+.page-hero h1{
+  font-size:42px;
+  font-weight:800;
+  margin-bottom:10px;
+}
+
+.dashboard-lead{
+  color:rgba(255,255,255,0.8);
+  max-width:600px;
+  font-size:16px;
+}
+
+.btn-secondary{
+  background:#fff;
+  color:#0f172a;
+  border:none;
+  padding:12px 22px;
+  border-radius:14px;
+  font-weight:600;
+  transition:0.3s;
+}
+
+.btn-secondary:hover{
+  transform:translateY(-2px);
+  background:#e2e8f0;
+  color:#000;
+}
+
+/* ================= METRIC CARDS ================= */
+
+.metric-card{
+  border:none;
+  border-radius:24px;
+  overflow:hidden;
+  transition:0.35s;
+  position:relative;
+  box-shadow:0 10px 30px rgba(0,0,0,0.06);
+}
+
+.metric-card:hover{
+  transform:translateY(-6px);
+}
+
+.metric-card .card-body{
+  padding:28px;
+}
+
+.metric-card h6{
+  font-weight:600;
+  color:#475569;
+}
+
+.metric-card h3{
+  font-size:36px;
+  font-weight:800;
+  margin-top:10px;
+}
+
+.metric-icon i{
+    font-size:32px;
+    color:white;
+    display:inline-block;
+}
+
+.metric-info{
+  background:linear-gradient(135deg,#eff6ff,#dbeafe);
+}
+
+.metric-info .metric-icon{
+  background:#2563eb;
+}
+
+.metric-success{
+  background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+}
+
+.metric-success .metric-icon{
+  background:#16a34a;
+}
+
+.metric-danger{
+  background:linear-gradient(135deg,#fef2f2,#fee2e2);
+}
+
+.metric-danger .metric-icon{
+  background:#dc2626;
+}
+
+.metric-warning{
+  background:linear-gradient(135deg,#fff7ed,#fde68a);
+}
+
+.metric-warning .metric-icon{
+  background:#f59e0b;
+}
+
+/* ================= STATUS CARDS ================= */
+
+.border-warning,
+.border-success,
+.border-danger{
+  border:none !important;
+  border-radius:22px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
+
+.border-warning{
+  background:linear-gradient(135deg,#fff7ed,#fef3c7);
+}
+
+.border-success{
+  background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+}
+
+.border-danger{
+  background:linear-gradient(135deg,#fef2f2,#fee2e2);
+}
+
+.border-warning h2{
+  color:#d97706 !important;
+  font-weight:800;
+}
+
+.border-success h2{
+  color:#16a34a !important;
+  font-weight:800;
+}
+
+.border-danger h2{
+  color:#dc2626 !important;
+  font-weight:800;
+}
+
+/* ================= MAIN CARDS ================= */
+
+.card{
+  border:none;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 12px 32px rgba(15,23,42,0.06);
+}
+
+.card-header{
+  background:#fff;
+  border-bottom:1px solid #e2e8f0;
+  padding:20px 25px;
+  font-size:18px;
+  font-weight:700;
+}
+
+.card-body{
+  padding:24px;
+}
+
+/* ================= TABLE ================= */
+
+.table{
+  margin-bottom:0;
+}
+
+.table thead{
+  background:#f8fafc;
+}
+
+.table thead th{
+  border:none;
+  color:#475569;
+  font-weight:700;
+  padding:16px;
+}
+
+.table tbody td{
+  padding:16px;
+  vertical-align:middle;
+  border-color:#f1f5f9;
+}
+
+.table-hover tbody tr{
+  transition:0.3s;
+}
+
+.table-hover tbody tr:hover{
+  background:#f8fafc;
+  transform:scale(1.01);
+}
+
+/* ================= BADGES ================= */
+
+.badge{
+  padding:8px 14px;
+  border-radius:30px;
+  font-size:12px;
+  font-weight:600;
+}
+
+/* ================= COMPLAINT CARDS ================= */
+
+.complaint-card{
+  border-radius:22px;
+  padding:18px;
+  margin-bottom:18px;
+  background:#fff;
+  transition:0.3s;
+  border:1px solid #e2e8f0;
+}
+
+.complaint-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 14px 32px rgba(0,0,0,0.08);
+}
+
+.complaint-card strong{
+  font-size:18px;
+}
+
+.complaint-card small{
+  color:#64748b;
+  line-height:1.8;
+}
+
+.complaint-proof{
+  width:100%;
+  max-height:220px;
+  object-fit:cover;
+  border-radius:16px;
+  border:1px solid #e2e8f0;
+  transition:0.3s;
+}
+
+.complaint-proof:hover{
+  transform:scale(1.02);
+}
+
+/* ================= ACTION BUTTONS ================= */
+
+.action-btn{
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  transition:0.3s;
+}
+
+.action-btn:hover{
+  transform:scale(1.08);
+}
+
+.btn-approve{
+  background:#16a34a;
+  color:#fff;
+}
+
+.btn-reject{
+  background:#dc2626;
+  color:#fff;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:768px){
+
+  .page-hero{
+    padding:24px;
+  }
+
+  .page-hero h1{
+    font-size:30px;
+  }
+
+  .table{
+    min-width:700px;
+  }
+}
+
+</style>
+
+<!-- HERO -->
+
+<div class="page-hero">
+
+  <div>
+
+    <span class="dashboard-kicker">
+      Administration
+    </span>
+
+    <h1>Admin Control Center</h1>
+
+    <p class="dashboard-lead">
+      Monitor users, complaints, verification workflow and overall system activity.
+    </p>
+
+  </div>
+
+  <a href="/admin/" class="btn btn-secondary">
+    <i class="fa-solid fa-screwdriver-wrench me-2"></i>
+    Django Admin
+  </a>
+
+</div>
+
+<!-- METRICS -->
+
+<div class="row g-4 mb-4">
+
+  <div class="col-sm-6 col-xl-3">
+
+    <div class="card metric-card metric-info h-100">
+
+      <div class="card-body">
+
+        <span class="metric-icon">
+          <i class="fa-solid fa-users"></i>
+        </span>
+
+        <h6 class="mt-4">Registered Users</h6>
+
+        <h3>{{ total_users }}</h3>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+
+    <div class="card metric-card metric-success h-100">
+
+      <div class="card-body">
+
+        <span class="metric-icon">
+          <i class="fas fa-user-check"></i>
+        </span>
+
+        <h6 class="mt-4">Active Users</h6>
+
+        <h3>{{ active_users }}</h3>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+
+    <div class="card metric-card metric-danger h-100">
+
+      <div class="card-body">
+
+        <span class="metric-icon">
+          <i class="fa-solid fa-file-shield"></i>
+        </span>
+
+        <h6 class="mt-4">Total Complaints</h6>
+
+        <h3>{{ total_complaints }}</h3>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+
+    <div class="card metric-card metric-warning h-100">
+
+      <div class="card-body">
+
+        <span class="metric-icon">
+          <i class="fa-solid fa-user-shield"></i>
+        </span>
+
+        <h6 class="mt-4">Staff Admins</h6>
+
+        <h3>{{ staff_users }}</h3>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- STATUS -->
+
+<div class="row g-4 mb-4">
+
+  <div class="col-md-4">
+
+    <div class="card border-warning h-100">
+
+      <div class="card-body text-center py-4">
+
+        <h5>Pending Complaints</h5>
+
+        <h2>{{ pending_count }}</h2>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-md-4">
+
+    <div class="card border-success h-100">
+
+      <div class="card-body text-center py-4">
+
+        <h5>Approved Complaints</h5>
+
+        <h2>{{ approved_count }}</h2>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-md-4">
+
+    <div class="card border-danger h-100">
+
+      <div class="card-body text-center py-4">
+
+        <h5>Rejected Complaints</h5>
+
+        <h2>{{ rejected_count }}</h2>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- MAIN -->
+
+<div class="row g-4">
+
+  <!-- USERS -->
+
+  <div class="col-xl-8">
+
+    <div class="card h-100">
+
+      <div class="card-header">
+
+        <i class="fa-solid fa-users me-2"></i>
+        User Management
+
+      </div>
+
+      <div class="card-body">
+
+        <div class="table-responsive">
+
+          <table class="table table-hover align-middle">
+
+            <thead>
+
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Complaints</th>
+              </tr>
+
+            </thead>
+
+            <tbody>
+
+              {% for account in users %}
+
+              <tr>
+
+                <td>#{{ account.id }}</td>
+
+                <td>
+                  <strong>{{ account.username }}</strong>
+                </td>
+
+                <td>{{ account.email|default:"Not added" }}</td>
+
+                <td>
+
+                  {% if account.is_staff %}
+
+                    <span class="badge bg-info">
+                      Admin
+                    </span>
+
+                  {% elif account.is_active %}
+
+                    <span class="badge bg-success">
+                      Active
+                    </span>
+
+                  {% else %}
+
+                    <span class="badge bg-danger">
+                      Inactive
+                    </span>
+
+                  {% endif %}
+
+                </td>
+
+                <td>
+                  {{ account.date_joined|date:"d M Y" }}
+                </td>
+
+                <td>
+
+                  <span class="badge bg-dark">
+                    {{ account.complaint_count }}
+                  </span>
+
+                </td>
+
+              </tr>
+
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- COMPLAINTS -->
+
+  <div class="col-xl-4">
+
+    <div class="card h-100">
+
+      <div class="card-header">
+
+        <i class="fa-solid fa-clock-rotate-left me-2"></i>
+
+        Complaint Verification
+
+      </div>
+
+      <div class="card-body">
+
+        {% for crime in recent_complaints %}
+
+        <div class="complaint-card">
+
+          <div class="d-flex justify-content-between align-items-start">
+
+            <div style="width:100%;">
+
+              <strong>
+                {{ crime.get_crime_type_display }}
+              </strong>
+
+              <br>
+
+              <small>
+                <i class="fa-solid fa-location-dot me-1"></i>
+                {{ crime.location_name }}
+              </small>
+
+              <br>
+
+              <small>
+                <i class="fa-solid fa-user me-1"></i>
+                {{ crime.reported_by.username|default:"N/A" }}
+              </small>
+
+              <br>
+
+              <small>
+                <i class="fa-solid fa-calendar me-1"></i>
+                {{ crime.date_time|date:"d M Y, h:i A" }}
+              </small>
+
+              <br><br>
+
+              {% if crime.status == "approved" %}
+
+                <span class="badge bg-success">
+                  Approved
+                </span>
+
+              {% elif crime.status == "rejected" %}
+
+                <span class="badge bg-danger">
+                  Rejected
+                </span>
+
+              {% else %}
+
+                <span class="badge bg-warning text-dark">
+                  Pending
+                </span>
+
+              {% endif %}
+
+              {% if crime.description %}
+
+              <div class="mt-3">
+
+                <small class="text-muted">
+                  {{ crime.description }}
+                </small>
+
+              </div>
+
+              {% endif %}
+
+              {% if crime.proof_file %}
+
+              <div class="mt-3">
+
+                {% if ".pdf" in crime.proof_file.url %}
+
+                <a href="{{ crime.proof_file.url }}"
+                   target="_blank"
+                   class="btn btn-dark btn-sm">
+
+                  <i class="fa-solid fa-file-pdf me-1"></i>
+
+                  View FIR PDF
+
+                </a>
+
+                {% else %}
+
+                <a href="{{ crime.proof_file.url }}"
+                   target="_blank">
+
+                  <img src="{{ crime.proof_file.url }}"
+                       class="complaint-proof">
+
+                </a>
+
+                {% endif %}
+
+              </div>
+
+              {% endif %}
+
+            </div>
+
+            {% if crime.status == "pending" %}
+
+            <div class="ms-3 d-flex flex-column">
+
+              <a href="{% url 'approve_crime' crime.id %}"
+                 class="action-btn btn-approve mb-2">
+
+                ✔
+
+              </a>
+
+              <a href="{% url 'reject_crime' crime.id %}"
+                 class="action-btn btn-reject">
+
+                ✖
+
+              </a>
+
+            </div>
+
+            {% endif %}
+
+          </div>
+
+        </div>
+
+        {% empty %}
+
+        <div class="text-center py-5 text-muted">
+
+          <i class="fa-solid fa-folder-open fa-2x mb-3"></i>
+
+          <p>No complaints found</p>
+
+        </div>
+
+        {% endfor %}
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}

@@ -1,28 +1,30 @@
 {% extends 'base.html' %}
-{% block title %}Delete Record — CDAVP{% endblock %}
+{% block title %}Delete Record - Crime Data Analysis{% endblock %}
 {% block content %}
+<div class="page-hero">
+  <div>
+    <span class="dashboard-kicker">Delete Confirmation</span>
+    <h1>Delete Crime Record</h1>
+    <p class="dashboard-lead">Confirm carefully. This record will be removed from analytics and map alerts.</p>
+  </div>
+</div>
 
 <div class="row">
-  <div class="col-md-8 offset-md-2">
-    <div class="card border-danger">
-      <div class="card-header bg-danger text-white">
-        <strong>⚠️ Confirm Delete</strong>
-      </div>
+  <div class="col-lg-7 mx-auto">
+    <div class="card">
+      <div class="card-header"><strong><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirm Delete</strong></div>
       <div class="card-body">
-        <p class="mb-3">Are you sure you want to delete this record?</p>
-        <div class="alert alert-warning">
-          <strong>{{ crime }}</strong>
-        </div>
+        <p class="mb-3">Are you sure you want to permanently delete this record?</p>
+        <div class="alert alert-warning"><strong>{{ crime }}</strong></div>
         <form method="POST">
           {% csrf_token %}
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="submit" class="btn btn-danger">🗑️ Delete Permanently</button>
-            <a href="/crimes/" class="btn btn-secondary">Cancel</a>
+          <div class="btn-group-aligned">
+            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-trash me-2"></i>Delete Permanently</button>
+            <a href="{% url 'crime_list' %}" class="btn btn-secondary"><i class="fa-solid fa-xmark me-1"></i>Cancel</a>
           </div>
         </form>
       </div>
     </div>
   </div>
 </div>
-
 {% endblock %}

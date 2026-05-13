@@ -1,240 +1,623 @@
 {% extends 'base.html' %}
-{% block title %}Alert Map - CDAVP{% endblock %}
+{% block title %}Alert Areas - Crime Data Analysis{% endblock %}
+
+{% block extra_css %}
+<style>
+  #map {
+    height: 720px;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .leaflet-control-container .leaflet-top,
+  .leaflet-control-container .leaflet-bottom {
+    z-index: 999;
+  }
+
+  .custom-popup {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .map-legend {
+    background: white;
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    line-height: 1.8;
+  }
+
+  .legend-color {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-  <div class="col-md-12">
-    <h1 class="mb-2">Khargone Community Alert Map</h1>
-    <p class="text-muted mb-4">All user complaints are visible here. Red and yellow highlights show areas where repeated incidents were reported inside Khargone city.</p>
+
+<div class="page-hero">
+  <div>
+    <span class="dashboard-kicker">Live Monitoring</span>
+    <h1>Khargone Alert Areas</h1>
+    <p class="dashboard-lead">
+      Detailed crime hotspot monitoring with advanced street & satellite maps.
+    </p>
   </div>
+
+  <a href="{% url 'crime_add' %}" class="btn btn-primary">
+    <i class="fa-solid fa-plus me-1"></i>
+    Report Complaint
+  </a>
 </div>
 
-<div class="row mb-4">
-  <div class="col-md-3">
-    <div class="card bg-danger text-white">
+<div class="row g-3 mb-4">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card metric-card metric-danger h-100">
       <div class="card-body">
-        <h6 class="card-title">Red Alert Areas</h6>
+        <span class="metric-icon">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </span>
+        <h6 class="card-title mt-3">Red Alert Areas</h6>
         <h3>{{ alert_summary.red_count }}</h3>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card bg-warning text-dark">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card metric-card metric-warning h-100">
       <div class="card-body">
-        <h6 class="card-title">Yellow Alert Areas</h6>
+        <span class="metric-icon">
+          <i class="fa-solid fa-eye"></i>
+        </span>
+        <h6 class="card-title mt-3">Yellow Alert Areas</h6>
         <h3>{{ alert_summary.yellow_count }}</h3>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card bg-success text-white">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card metric-card metric-success h-100">
       <div class="card-body">
-        <h6 class="card-title">Normal Areas</h6>
+        <span class="metric-icon">
+          <i class="fa-solid fa-shield-halved"></i>
+        </span>
+        <h6 class="card-title mt-3">Normal Areas</h6>
         <h3>{{ alert_summary.green_count }}</h3>
       </div>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card bg-dark text-white">
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card metric-card metric-info h-100">
       <div class="card-body">
-        <h6 class="card-title">Report Complaint</h6>
-        <p class="mb-0"><a href="/crimes/add/" class="btn btn-sm btn-light">Add Now</a></p>
+        <span class="metric-icon">
+          <i class="fa-solid fa-clock"></i>
+        </span>
+        <h6 class="card-title mt-3">Risk Slots</h6>
+        <h3>{{ risky_time_slots|length }}</h3>
       </div>
     </div>
   </div>
+
 </div>
 
-<div class="row mb-3">
-  <div class="col-md-8">
-    <div class="form-check form-switch">
-      <input class="form-check-input" type="checkbox" id="khargoneLayer" checked>
-      <label class="form-check-label" for="khargoneLayer">Show Khargone City Boundary</label>
+<div class="row g-3">
+
+  <div class="col-xl-8">
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <strong>
+          <i class="fa-solid fa-map-location-dot me-2"></i>
+          Khargone Smart Crime Map
+        </strong>
+      </div>
+
+      <div class="card-body">
+        <div id="map"></div>
+      </div>
     </div>
-  </div>
-  <div class="col-md-4 text-md-end mt-2 mt-md-0">
-    <span class="badge bg-danger me-2">Red Alert</span>
-    <span class="badge bg-warning text-dark me-2">Yellow Alert</span>
-    <span class="badge bg-success">Normal Alert</span>
-  </div>
-</div>
 
-<div id="map" style="height: 620px; width: 100%; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
-
-<div class="row mt-4">
-  <div class="col-md-6">
     <div class="card h-100">
-      <div class="card-header bg-dark text-white">
-        <strong>High Risk Time Slots</strong>
+      <div class="card-header">
+        <strong>
+          <i class="fa-solid fa-map-pin me-2"></i>
+          Area Alert Summary
+        </strong>
       </div>
+
       <div class="card-body">
-        <table class="table table-sm table-striped mb-0">
-          <thead>
-            <tr>
-              <th>Time Slot</th>
-              <th>Reports</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for slot in risky_time_slots %}
-            <tr>
-              <td>{{ slot.label }}</td>
-              <td>{{ slot.count }}</td>
-              <td>
-                {% if slot.count >= 3 %}
-                <span class="badge bg-danger">Unsafe</span>
-                {% elif slot.count >= 2 %}
-                <span class="badge bg-warning text-dark">Watch</span>
-                {% else %}
-                <span class="badge bg-success">Safer</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="3" class="text-center text-muted">No time slot data available.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+
+        <div class="table-responsive">
+
+          <table class="table table-hover">
+
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Alert</th>
+                <th>Reports</th>
+                <th>Top Crime</th>
+                <th>Risk Time</th>
+                <th>Coordinates</th>
+              </tr>
+            </thead>
+
+            <tbody>
+
+              {% for area in hotspot_areas %}
+
+              <tr>
+
+                <td>{{ area.location_name }}</td>
+
+                <td>
+                  <span class="badge bg-{% if area.alert_level == 'red' %}danger{% elif area.alert_level == 'yellow' %}warning{% else %}success{% endif %}">
+                    {{ area.alert_level|upper }}
+                  </span>
+                </td>
+
+                <td>{{ area.report_count }}</td>
+
+                <td>{{ area.top_crime }}</td>
+
+                <td>{{ area.unsafe_time_slot }}</td>
+
+                <td>
+                  {{ area.latitude }},
+                  {{ area.longitude }}
+                </td>
+
+              </tr>
+
+              {% empty %}
+
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  No alert data available yet.
+                </td>
+              </tr>
+
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
       </div>
     </div>
+
   </div>
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header bg-dark text-white">
-        <strong>How Alerts Work</strong>
+
+  <div class="col-xl-4">
+
+    <div class="card mb-3">
+
+      <div class="card-header">
+        <strong>
+          <i class="fa-solid fa-clock me-2"></i>
+          High Risk Time Slots
+        </strong>
       </div>
+
       <div class="card-body">
-        <p class="mb-2"><strong>Red Alert:</strong> 3 or more complaints from the same area.</p>
-        <p class="mb-2"><strong>Yellow Alert:</strong> 2 complaints from the same area.</p>
-        <p class="mb-0"><strong>Normal:</strong> 1 complaint reported in that area.</p>
+
+        {% for slot in risky_time_slots %}
+
+        <div class="alert alert-light border d-flex justify-content-between">
+          <span>{{ slot.label }}</span>
+          <strong>{{ slot.count }} reports</strong>
+        </div>
+
+        {% empty %}
+
+        <p class="text-muted text-center py-3">
+          No time slot data available.
+        </p>
+
+        {% endfor %}
+
       </div>
+
     </div>
+
+    <div class="card">
+
+      <div class="card-header">
+        <strong>
+          <i class="fa-solid fa-circle-info me-2"></i>
+          Alert Guide
+        </strong>
+      </div>
+
+      <div class="card-body">
+
+        <p class="mb-2">
+          <span class="badge bg-danger me-2">Red</span>
+          High crime hotspot
+        </p>
+
+        <p class="mb-2">
+          <span class="badge bg-warning me-2">Yellow</span>
+          Medium risk zone
+        </p>
+
+        <p class="mb-0">
+          <span class="badge bg-success me-2">Green</span>
+          Low risk area
+        </p>
+
+      </div>
+
+    </div>
+
   </div>
+
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-window.addEventListener('load', function() {
-  var mapData = {{ map_data|safe }};
-  var hotspotAreas = {{ hotspot_areas|safe }};
-  var khargoneGeoJson = {{ khargone_geojson|safe }};
-  var map = L.map('map').setView([22.05, 75.18], 10);
-  var markerGroup = L.featureGroup().addTo(map);
-  var alertGroup = L.featureGroup().addTo(map);
 
-  var khargoneLayer = L.geoJSON(null, {
-    style: function() {
-      return {
-        color: '#1E90FF',
-        weight: 4,
-        opacity: 0.9,
-        fillColor: '#87CEEB',
-        fillOpacity: 0.18
-      };
-    },
-    onEachFeature: function(feature, layer) {
-      layer.bindPopup(
-        '<strong>' + feature.properties.name + '</strong><br>' +
-        feature.properties.city + ', ' + feature.properties.state
-      );
+window.addEventListener('load', function () {
+
+  const mapData = {{ map_data|safe }};
+  const hotspotAreas = {{ hotspot_areas_json|safe }};
+  const khargoneGeoJson = {{ khargone_geojson|safe }};
+
+ 
+  const map = L.map('map', {
+    zoomControl: true,
+    minZoom: 11,
+    maxZoom: 22
+  }).setView([21.8247, 75.6102], 16);
+
+  /*
+  =========================
+  TILE LAYERS
+  =========================
+  */
+
+  const streetLayer = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 22
     }
-  });
+  );
 
-  document.getElementById('khargoneLayer').addEventListener('change', function(e) {
-    if (e.target.checked) {
-      map.addLayer(khargoneLayer);
-    } else {
-      map.removeLayer(khargoneLayer);
+  const satelliteLayer = L.tileLayer(
+    'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    {
+      maxZoom: 22
     }
-  });
+  );
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors & Khargone City Boundary',
-    maxZoom: 19
+  const darkLayer = L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {
+      subdomains: 'abcd',
+      maxZoom: 22
+    }
+  );
+
+  streetLayer.addTo(map);
+
+  /*
+  =========================
+  MAP CONTROL
+  =========================
+  */
+
+  L.control.layers({
+    "Street Map": streetLayer,
+    "Satellite": satelliteLayer,
+    "Dark Mode": darkLayer
   }).addTo(map);
 
-  khargoneLayer.addData(khargoneGeoJson);
-  map.addLayer(khargoneLayer);
-  var khargoneBounds = khargoneLayer.getBounds();
+  /*
+  =========================
+  KHARGONE BOUNDARY
+  =========================
+  */
 
-  var crimeColors = {
-    'theft': '#FF6B6B',
-    'assault': '#FFC93D',
-    'robbery': '#2C3E50',
-    'murder': '#E74C3C',
-    'fraud': '#3498DB',
-    'vandalism': '#95A5A6',
-    'drug_offense': '#27AE60',
-    'other': '#7F8C8D'
+  const boundaryLayer = L.geoJSON(khargoneGeoJson, {
+    style: {
+      color: '#2563eb',
+      weight: 3,
+      fillColor: '#60a5fa',
+      fillOpacity: 0.08
+    }
+  }).addTo(map);
+
+  const khargoneBounds = boundaryLayer.getBounds();
+
+  /*
+  =========================
+  COLORS
+  =========================
+  */
+
+  const crimeColors = {
+    theft: '#dc2626',
+    assault: '#d97706',
+    robbery: '#111827',
+    murder: '#7f1d1d',
+    fraud: '#2563eb',
+    vandalism: '#64748b',
+    drug_offense: '#15803d',
+    other: '#7c3aed'
   };
 
-  var alertStyles = {
-    red: { color: '#c1121f', fillColor: '#ef233c', radius: 450 },
-    yellow: { color: '#f77f00', fillColor: '#fcbf49', radius: 325 },
-    green: { color: '#2a9d8f', fillColor: '#52b788', radius: 220 }
-  };
+  /*
+  =========================
+  CRIME MARKERS
+  =========================
+  */
 
-  mapData.forEach(function(crime) {
-    var point = L.latLng(crime.latitude, crime.longitude);
-    if (!Number.isFinite(crime.latitude) || !Number.isFinite(crime.longitude)) {
+  mapData.forEach(function(crime){
+
+    if(
+      !Number.isFinite(crime.latitude) ||
+      !Number.isFinite(crime.longitude)
+    ){
       return;
     }
-    if (khargoneBounds.isValid() && !khargoneBounds.contains(point)) {
-      return;
-    }
 
-    var marker = L.circleMarker([crime.latitude, crime.longitude], {
-      radius: 8,
-      fillColor: crimeColors[crime.crime_type] || '#999',
-      color: '#fff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.9
-    }).addTo(markerGroup);
+    L.circleMarker(
+      [crime.latitude, crime.longitude],
+      {
+        radius: 8,
+        fillColor: crimeColors[crime.crime_type] || '#64748b',
+        color: '#fff',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.95
+      }
 
-    marker.bindPopup(
-      '<strong>' + crime.crime_type_display + '</strong><br>' +
-      crime.location_name + '<br>' +
-      'Reported by: ' + crime.reported_by + '<br>' +
-      'Time slot: ' + crime.time_slot + '<br>' +
-      crime.date_time
-    );
+    ).addTo(map)
+
+    .bindPopup(`
+
+      <div class="custom-popup">
+
+        <strong>${crime.crime_type_display}</strong><br>
+
+        <b>Location:</b>
+        ${crime.location_name}<br>
+
+        <b>Reported By:</b>
+        ${crime.reported_by}<br>
+
+        <b>Time Slot:</b>
+        ${crime.time_slot}<br>
+
+        <b>Date:</b>
+        ${crime.date_time}<br><br>
+
+        ${
+          crime.proof_url
+          ?
+          `<a href="${crime.proof_url}" target="_blank"
+             class="btn btn-sm btn-primary">
+             View FIR
+           </a>`
+          :
+          '<span style="color:gray;">No FIR Uploaded</span>'
+        }
+
+      </div>
+
+    `);
+
   });
 
-  hotspotAreas.forEach(function(area) {
-    var point = L.latLng(area.latitude, area.longitude);
-    if (khargoneBounds.isValid() && !khargoneBounds.contains(point)) {
-      return;
+  /*
+  =========================
+  HOTSPOT CIRCLES
+  =========================
+  */
+
+  hotspotAreas.forEach(function(area){
+
+    let color = 'green';
+    let fill = '#22c55e';
+    let radius = 220;
+
+    if(area.alert_level === 'red'){
+      color = '#dc2626';
+      fill = '#ef4444';
+      radius = 450;
     }
 
-    var style = alertStyles[area.alert_level] || alertStyles.green;
-    var circle = L.circle([area.latitude, area.longitude], {
-      radius: style.radius,
-      color: style.color,
-      fillColor: style.fillColor,
-      fillOpacity: 0.28,
-      weight: 2
-    }).addTo(alertGroup);
+    else if(area.alert_level === 'yellow'){
+      color = '#d97706';
+      fill = '#f59e0b';
+      radius = 320;
+    }
 
-    circle.bindPopup(
-      '<strong>' + area.location_name + '</strong><br>' +
-      'Alert: ' + area.alert_level.toUpperCase() + '<br>' +
-      'Complaints: ' + area.report_count + '<br>' +
-      'Top issue: ' + area.top_crime + '<br>' +
-      'Unsafe time slot: ' + area.unsafe_time_slot + '<br>' +
-      'Latest report: ' + area.latest_report
-    );
+    L.circle(
+      [area.latitude, area.longitude],
+      {
+        radius: radius,
+        color: color,
+        fillColor: fill,
+        fillOpacity: 0.22,
+        weight: 2
+      }
+
+    ).addTo(map)
+
+    .bindPopup(`
+
+      <div class="custom-popup">
+
+        <strong>${area.location_name}</strong><br>
+
+        <b>Alert:</b>
+        ${area.alert_level.toUpperCase()}<br>
+
+        <b>Complaints:</b>
+        ${area.report_count}<br>
+
+        <b>Top Crime:</b>
+        ${area.top_crime}<br>
+
+        <b>Risk Time:</b>
+        ${area.unsafe_time_slot}
+
+      </div>
+
+    `);
+
   });
 
-  if (khargoneBounds.isValid()) {
-    map.fitBounds(khargoneBounds.pad(0.05), { animate: true });
-  } else {
-    map.setView([22.05, 75.18], 10);
+  /*
+  =========================
+  FIT BOUNDS
+  =========================
+  */
+
+  if(khargoneBounds.isValid()){
+
+    map.fitBounds(
+      khargoneBounds.pad(0.02),
+      {
+        animate:false,
+        maxZoom:16
+      }
+    );
+
   }
 
-  setTimeout(function() {
+  /*
+  =========================
+  REALTIME UPDATE
+  =========================
+  */
+
+  function loadCrimes(){
+
+    fetch("/api/crimes/")
+
+    .then(res => res.json())
+
+    .then(data => {
+
+      data.forEach(c => {
+
+        if(!c.latitude || !c.longitude){
+          return;
+        }
+
+        L.marker([c.latitude, c.longitude])
+
+        .addTo(map)
+
+        .bindPopup(`
+
+          <b>${c.crime_type_display}</b><br>
+
+          ${c.location_name}<br><br>
+
+          ${
+            c.proof_url
+            ?
+            `<a href="${c.proof_url}" target="_blank">
+                View FIR
+             </a>`
+            :
+            ''
+          }
+
+        `);
+
+      });
+
+    });
+
+  }
+
+  /*
+  =========================
+  AUTO REFRESH
+  =========================
+  */
+
+  setInterval(loadCrimes, 10000);
+
+  /*
+  =========================
+  LEGEND
+  =========================
+  */
+
+  const legend = L.control({
+    position: 'bottomright'
+  });
+
+  legend.onAdd = function () {
+
+    const div = L.DomUtil.create(
+      'div',
+      'map-legend'
+    );
+
+    div.innerHTML = `
+
+      <h6 class="mb-2">
+        Crime Alerts
+      </h6>
+
+      <div>
+        <span class="legend-color"
+        style="background:#ef4444"></span>
+        Red Alert
+      </div>
+
+      <div>
+        <span class="legend-color"
+        style="background:#f59e0b"></span>
+        Yellow Alert
+      </div>
+
+      <div>
+        <span class="legend-color"
+        style="background:#22c55e"></span>
+        Safe Zone
+      </div>
+
+    `;
+
+    return div;
+  };
+
+  legend.addTo(map);
+
+  /*
+  =========================
+  FIX RENDER
+  =========================
+  */
+
+  setTimeout(function(){
+
     map.invalidateSize();
-  }, 100);
+
+  }, 500);
+
 });
 </script>
+
 {% endblock %}

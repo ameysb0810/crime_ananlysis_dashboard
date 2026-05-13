@@ -1,40 +1,40 @@
 {% extends 'base.html' %}
-{% block title %}Register — CDAVP{% endblock %}
+{% block title %}Register - Crime Data Analysis{% endblock %}
 {% block content %}
-
-<div class="row">
-  <div class="col-md-6 offset-md-3">
-    <div class="card mt-5">
-      <div class="card-header bg-dark text-white text-center">
-        <h4 class="mb-0">✍️ Create Account</h4>
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-showcase">
+      <span class="auth-badge">New Account</span>
+      <h1>Join Crime Data Analysis Community</h1>
+      <p>Create an account to report incidents, review trends, and contribute to shared safety data.</p>
+      <div class="auth-highlights">
+        <div class="auth-highlight"><i class="fa-solid fa-bullhorn"></i><span>Report crimes and unsafe areas</span></div>
+        <div class="auth-highlight"><i class="fa-solid fa-chart-column"></i><span>View analytics and hotspot maps</span></div>
+        <div class="auth-highlight"><i class="fa-solid fa-users"></i><span>Support community awareness</span></div>
       </div>
-      <div class="card-body">
-        <h5 class="text-center mb-4">Register to use CDAVP</h5>
-
-        <form method="POST">
-          {% csrf_token %}
-          {% for field in form %}
-          <div class="mb-3">
-            <label class="form-label">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}
-            <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small>
-            {% endif %}
-            {% if field.errors %}
-            <div class="text-danger small mt-1">{{ field.errors }}</div>
-            {% endif %}
-          </div>
-          {% endfor %}
-          <button type="submit" class="btn btn-success w-100">📝 Register</button>
-        </form>
-
-        <hr>
-        <p class="text-center">
-          Already have an account? <a href="/accounts/login/">Login here</a>
-        </p>
+    </div>
+    <div class="auth-panel">
+      <div class="auth-panel-header">
+        <p class="auth-eyebrow">Register</p>
+        <h2>Create your account</h2>
+        <p class="auth-subtitle">Fill in your details to get started.</p>
+      </div>
+      <form method="POST" class="auth-form">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="auth-field">
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+          {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary auth-submit-btn">Create Account</button>
+      </form>
+      <div class="auth-footer">
+        <p class="mb-0">Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
       </div>
     </div>
   </div>
-</div>
-
+</section>
 {% endblock %}

@@ -1,34 +1,502 @@
 {% extends 'base.html' %}
-{% block title %}{{ action }} Crime - CDAVP{% endblock %}
 {% block content %}
-<div class="row">
-  <div class="col-md-8 offset-md-2">
-    <div class="card">
-      <div class="card-header bg-dark text-white">
-        <strong>{{ action }} Crime Record</strong>
-      </div>
-      <div class="card-body">
-        <div class="alert alert-info">
-          This complaint will be visible to all logged-in users and will be included in hotspot alerts and unsafe time-slot analysis.
-        </div>
-        <form method="POST">
-          {% csrf_token %}
-          {% for field in form %}
-          <div class="mb-3">
-            <label class="form-label">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}
-            <div class="text-danger small mt-1">{{ field.errors }}</div>
-            {% endif %}
-          </div>
-          {% endfor %}
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="submit" class="btn btn-success">Save</button>
-            <a href="/crimes/" class="btn btn-secondary">Cancel</a>
-          </div>
-        </form>
-      </div>
-    </div>
+
+<style>
+
+:root{
+  --primary:#2563eb;
+  --secondary:#0f172a;
+  --border:#e2e8f0;
+  --light:#f8fafc;
+  --text:#334155;
+}
+
+/* ================= PAGE ================= */
+
+.crime-page{
+  max-width:1200px;
+  margin:auto;
+}
+
+/* ================= HERO ================= */
+
+.crime-hero{
+  background:linear-gradient(135deg,#0f172a,#1e3a8a);
+  color:#fff;
+  padding:34px;
+  border-radius:28px;
+  margin-bottom:24px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(15,23,42,0.15);
+}
+
+.crime-hero::before{
+  content:'';
+  position:absolute;
+  width:280px;
+  height:280px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.05);
+  top:-120px;
+  right:-80px;
+}
+
+.crime-badge{
+  display:inline-block;
+  background:rgba(255,255,255,0.12);
+  padding:8px 16px;
+  border-radius:30px;
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  margin-bottom:18px;
+}
+
+.crime-hero h1{
+  font-size:38px;
+  font-weight:800;
+  margin-bottom:12px;
+  position:relative;
+  z-index:2;
+}
+
+.crime-hero p{
+  color:rgba(255,255,255,0.82);
+  max-width:650px;
+  position:relative;
+  z-index:2;
+}
+
+/* ================= CARD ================= */
+
+.crime-card{
+  background:#fff;
+  border-radius:28px;
+  padding:34px;
+  box-shadow:0 12px 35px rgba(15,23,42,0.06);
+}
+
+/* ================= FORM ================= */
+
+.crime-form{
+  display:flex;
+  flex-direction:column;
+  gap:20px;
+}
+
+.crime-form p{
+  margin-bottom:0;
+}
+
+.crime-form label{
+  font-weight:600;
+  color:#334155;
+  margin-bottom:8px;
+  display:block;
+}
+
+.crime-form input,
+.crime-form select,
+.crime-form textarea{
+  width:100%;
+  padding:14px 16px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:#f8fafc;
+  transition:0.3s;
+  font-size:14px;
+}
+
+.crime-form textarea{
+  min-height:120px;
+  resize:vertical;
+}
+
+.crime-form input:focus,
+.crime-form select:focus,
+.crime-form textarea:focus{
+  outline:none;
+  border-color:#2563eb;
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(37,99,235,0.10);
+}
+
+/* ================= MAP ================= */
+
+.map-wrapper{
+  margin-top:12px;
+}
+
+.map-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:14px;
+}
+
+.map-title{
+  font-weight:700;
+  font-size:18px;
+  color:#0f172a;
+}
+
+.map-note{
+  background:#eff6ff;
+  color:#1d4ed8;
+  padding:8px 14px;
+  border-radius:12px;
+  font-size:13px;
+}
+
+#map{
+  height:520px;
+  width:100%;
+  border-radius:22px;
+  overflow:hidden;
+  border:1px solid #dbeafe;
+  box-shadow:0 10px 30px rgba(37,99,235,0.08);
+}
+
+/* ================= LOCATION INFO ================= */
+
+.location-box{
+  margin-top:18px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:18px;
+  padding:18px;
+}
+
+.location-title{
+  font-weight:700;
+  margin-bottom:10px;
+  color:#0f172a;
+}
+
+#selectedLocation{
+  color:#16a34a;
+  font-size:14px;
+  line-height:1.8;
+  margin:0;
+}
+
+/* ================= BUTTON ================= */
+
+.submit-btn{
+  margin-top:10px;
+  border:none;
+  border-radius:16px;
+  padding:15px;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#fff;
+  font-weight:700;
+  font-size:15px;
+  transition:0.3s;
+  box-shadow:0 10px 25px rgba(37,99,235,0.25);
+}
+
+.submit-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 16px 30px rgba(37,99,235,0.30);
+}
+
+/* ================= ALERT ================= */
+
+.alert-error{
+  background:#fef2f2;
+  color:#b91c1c;
+  padding:14px 18px;
+  border-radius:16px;
+  margin-bottom:18px;
+  border:1px solid #fecaca;
+}
+
+/* ================= LEAFLET ================= */
+
+.leaflet-control-layers{
+  border-radius:14px !important;
+  overflow:hidden;
+  border:none !important;
+  box-shadow:0 8px 20px rgba(0,0,0,0.08);
+}
+
+.leaflet-popup-content-wrapper{
+  border-radius:14px;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:768px){
+
+  .crime-card{
+    padding:24px;
+  }
+
+  .crime-hero{
+    padding:26px;
+  }
+
+  .crime-hero h1{
+    font-size:30px;
+  }
+
+  #map{
+    height:420px;
+  }
+}
+
+</style>
+
+<div class="crime-page">
+
+  <!-- HERO -->
+
+  <div class="crime-hero">
+
+    <span class="crime-badge">
+      Crime Reporting
+    </span>
+
+    <h1>
+      {{ action|default:"Add" }} Crime Record
+    </h1>
+
+    <p>
+      Submit verified crime information, upload proof files and pinpoint the exact location within Khargone district.
+    </p>
+
   </div>
+
+  <!-- FORM CARD -->
+
+  <div class="crime-card">
+
+    {% for message in messages %}
+
+    <div class="alert-error">
+      {{ message }}
+    </div>
+
+    {% endfor %}
+
+    <form method="POST"
+          enctype="multipart/form-data"
+          class="crime-form"
+          onsubmit="return validateLocation()">
+
+      {% csrf_token %}
+
+      {{ form.as_p }}
+
+      <!-- MAP -->
+
+      <div class="map-wrapper">
+
+        <div class="map-header">
+
+          <div class="map-title">
+            <i class="fa-solid fa-map-location-dot me-2"></i>
+            Select Crime Location
+          </div>
+
+          <div class="map-note">
+            Only Khargone district locations are allowed
+          </div>
+
+        </div>
+
+        <div id="map"></div>
+
+      </div>
+
+      <!-- LOCATION -->
+
+      <div class="location-box">
+
+        <div class="location-title">
+          <i class="fa-solid fa-location-crosshairs me-2"></i>
+          Selected Coordinates
+        </div>
+
+        <p id="selectedLocation">
+          No location selected yet
+        </p>
+
+      </div>
+
+      <!-- HIDDEN INPUTS -->
+
+      <input type="hidden" name="latitude" id="latitude">
+      <input type="hidden" name="longitude" id="longitude">
+
+      <!-- BUTTON -->
+
+      <button type="submit" class="submit-btn">
+
+        <i class="fa-solid fa-paper-plane me-2"></i>
+
+        Submit Crime Report
+
+      </button>
+
+    </form>
+
+  </div>
+
 </div>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+window.addEventListener('load', function(){
+
+    /*
+    =========================
+    MAP INIT
+    =========================
+    */
+
+    var map = L.map('map', {
+        zoomControl:true,
+        minZoom:11,
+        maxZoom:22
+    }).setView([21.8247, 75.6102], 15);
+
+    var street = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        {
+            attribution:'&copy; OpenStreetMap &copy; CARTO',
+            subdomains:'abcd',
+            maxZoom:22
+        }
+    );
+
+    var satellite = L.tileLayer(
+        'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+        { maxZoom:22 }
+    );
+
+    var dark = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        {
+            subdomains:'abcd',
+            maxZoom:22
+        }
+    );
+
+    street.addTo(map);
+
+    L.control.layers(
+        {
+            "Street Map": street,
+            "Satellite": satellite,
+            "Dark Mode": dark
+        }
+    ).addTo(map);
+
+    /*
+    =========================
+    KHARGONE BOUNDARY
+    =========================
+    */
+
+    var khargoneGeoJson = {{ khargone_geojson|safe }};
+
+    var boundaryLayer = L.geoJSON(khargoneGeoJson, {
+        style:{
+            color:'#2563eb',
+            weight:3,
+            fillColor:'#60a5fa',
+            fillOpacity:0.08
+        }
+    }).addTo(map);
+
+    var bounds = boundaryLayer.getBounds();
+
+    map.fitBounds(bounds.pad(0.02), {
+        animate:false,
+        maxZoom:16
+    });
+
+    /*
+    =========================
+    MARKER
+    =========================
+    */
+
+    var marker = null;
+
+    map.on('click', function(e){
+
+        if(!bounds.contains(e.latlng)){
+
+            alert("❌ Only Khargone district locations are allowed");
+
+            return;
+        }
+
+        if(marker){
+            map.removeLayer(marker);
+        }
+
+        marker = L.marker(e.latlng).addTo(map);
+
+        marker.bindPopup(
+            "<b>Selected Crime Location</b><br>" +
+            "Latitude: " + e.latlng.lat.toFixed(6) + "<br>" +
+            "Longitude: " + e.latlng.lng.toFixed(6)
+        ).openPopup();
+
+        document.getElementById("latitude").value = e.latlng.lat;
+        document.getElementById("longitude").value = e.latlng.lng;
+
+        document.getElementById("selectedLocation").innerHTML =
+            "📍 Latitude: <b>" + e.latlng.lat.toFixed(6) +
+            "</b><br>📍 Longitude: <b>" + e.latlng.lng.toFixed(6) + "</b>";
+    });
+
+    /*
+    =========================
+    VALIDATION
+    =========================
+    */
+
+    window.validateLocation = function(){
+
+        let lat = document.getElementById("latitude").value;
+        let lng = document.getElementById("longitude").value;
+
+        if(!lat || !lng){
+
+            alert("Please select a location on the map");
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /*
+    =========================
+    FIX MAP RENDER
+    =========================
+    */
+
+    setTimeout(function(){
+        map.invalidateSize();
+    }, 300);
+
+});
+
+</script>
+
 {% endblock %}
